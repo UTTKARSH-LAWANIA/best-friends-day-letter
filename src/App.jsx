@@ -1,30 +1,37 @@
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import useLocalStorage from './hooks/useLocalStorage';
 
-// Components
-import FloatingElements from './components/FloatingElements';
-import BackgroundMusic from './components/BackgroundMusic';
+// Custom Components
+import AmbientSynthesizer from './components/AmbientSynthesizer';
 import LoadingScreen from './components/LoadingScreen';
-import WelcomeScreen from './components/WelcomeScreen';
-import Navbar from './components/Navbar';
-import LetterSection from './components/LetterSection';
-import ReasonsSection from './components/ReasonsSection';
-import StatsSection from './components/StatsSection';
-import FinalSurprise from './components/FinalSurprise';
-import Footer from './components/Footer';
+import HeroSection from './components/HeroSection';
+import EnvelopeSection from './components/EnvelopeSection';
+import CinematicStorySection from './components/CinematicStorySection';
+import GlassCardsSection from './components/GlassCardsSection';
+import UnforgettableSection from './components/UnforgettableSection';
+import SurpriseSection from './components/SurpriseSection';
+import CakeSection from './components/CakeSection';
+import EndingSection from './components/EndingSection';
 
 export default function App() {
-  const [step, setStep] = useState('loading'); // 'loading', 'welcome', 'main'
-  const [name, setName] = useLocalStorage('friend_name', '');
-  const [darkMode, setDarkMode] = useLocalStorage('theme_dark', true); // cinematic dark default
-  
-  // Progressive reveal index: 0 = Letter, 1 = Reasons, 2 = Stats, 3 = Surprise
-  const [unlockedIndex, setUnlockedIndex] = useState(0);
-
-  // Mouse coordinates for cursor glow backdrop
+  const [step, setStep] = useState('loading'); // 'loading', 'main'
+  const [name, setName] = useState('Shivika');
+  const [isAudioStarted, setIsAudioStarted] = useState(false);
+  const [isEnding, setIsEnding] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
+  // Initialize Name from URL parameters (?name=Shivika or ?to=Shivika)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlName = urlParams.get('name') || urlParams.get('to');
+    if (urlName && urlName.trim().length > 0) {
+      setName(urlName.trim());
+    } else {
+      setName('Shivika'); // Fallback default
+    }
+  }, []);
+
+  // Sync cursor coordinates for glowing backdrop node
   useEffect(() => {
     const handleMouseMove = (e) => {
       setMousePos({ x: e.clientX, y: e.clientY });
@@ -33,116 +40,84 @@ export default function App() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // Sync dark mode class with HTML tag
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
-
-  // Handle auto-scrolling to newly unlocked sections
-  useEffect(() => {
-    if (step === 'main' && unlockedIndex > 0) {
-      const sectionIds = ['letter', 'reasons', 'stats', 'surprise'];
-      const nextSectionId = sectionIds[unlockedIndex];
-      
-      const timer = setTimeout(() => {
-        const element = document.getElementById(nextSectionId);
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 150);
-
-      return () => clearTimeout(timer);
-    }
-  }, [unlockedIndex, step]);
-
-  const handleStart = (visitorName) => {
-    setName(visitorName);
-    setStep('main');
-  };
-
-  const unlockNextSection = (currentIndex) => {
-    if (unlockedIndex === currentIndex) {
-      setUnlockedIndex(currentIndex + 1);
-    } else {
-      const sectionIds = ['letter', 'reasons', 'stats', 'surprise'];
-      const nextSectionId = sectionIds[currentIndex + 1];
-      const element = document.getElementById(nextSectionId);
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+  const handleBegin = () => {
+    setIsAudioStarted(true);
+    // Smooth scroll down to envelope section
+    const element = document.getElementById('note');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
 
   return (
-    <div className="relative min-h-screen text-[var(--text-main)] transition-colors duration-300">
-      {step !== 'loading' && <FloatingElements />}
-      {step !== 'loading' && <BackgroundMusic isStarted={step === 'main'} />}
-      
+    <div className="relative min-h-screen bg-[#050505] text-[#B4B4B4] overflow-hidden">
+      {/* Premium custom mouse glow node */}
       <div 
-        className="custom-glow-cursor" 
+        className="glow-cursor-follow" 
         style={{ 
           left: `${mousePos.x}px`, 
           top: `${mousePos.y}px` 
         }} 
       />
 
+      {/* Procedural soundscape synthesiser */}
+      <AmbientSynthesizer isStarted={isAudioStarted} isEnding={isEnding} />
+
       <AnimatePresence mode="wait">
-        {step === 'loading' && (
-          <LoadingScreen key="loading" onFinished={() => setStep('welcome')} />
-        )}
-
-        {step === 'welcome' && (
-          <WelcomeScreen key="welcome" onStart={handleStart} />
-        )}
-
-        {step === 'main' && (
+        {step === 'loading' ? (
+          <LoadingScreen 
+            key="loading" 
+            initialName={name} 
+            onFinished={(finalName) => {
+              setName(finalName);
+              setStep('main');
+            }} 
+          />
+        ) : (
           <motion.div
             key="main"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.8 }}
-            className="pt-16"
+            transition={{ duration: 1.5 }}
+            className="w-full relative"
           >
-            <Navbar 
-              name={name} 
-              darkMode={darkMode} 
-              setDarkMode={setDarkMode} 
-            />
+            {/* SECTION 1: Cinematic Hero */}
+            <HeroSection name={name} onBegin={handleBegin} />
 
-            <main className="space-y-4 md:space-y-0">
-              
-              <div id="letter" className="min-h-screen scroll-mt-16">
-                <LetterSection 
-                  name={name} 
-                  onNext={() => unlockNextSection(0)} 
-                />
-              </div>
+            {/* SECTION 2: The Envelope & Handwritten Letter */}
+            <div id="note" className="scroll-mt-0">
+              <EnvelopeSection name={name} />
+            </div>
 
-              {unlockedIndex >= 1 && (
-                <div id="reasons" className="min-h-screen scroll-mt-16">
-                  <ReasonsSection onNext={() => unlockNextSection(1)} />
-                </div>
-              )}
+            {/* SECTION 3: Cinematic Story Scroll */}
+            <div id="stories">
+              <CinematicStorySection />
+            </div>
 
-              {unlockedIndex >= 2 && (
-                <div id="stats" className="min-h-screen scroll-mt-16">
-                  <StatsSection onNext={() => unlockNextSection(2)} />
-                </div>
-              )}
+            {/* SECTION 4: Glass Qualities Flip Cards */}
+            <div id="qualities">
+              <GlassCardsSection />
+            </div>
 
-              {unlockedIndex >= 3 && (
-                <div id="surprise" className="min-h-screen scroll-mt-16">
-                  <FinalSurprise />
-                </div>
-              )}
+            {/* SECTION 5: Things that make you unforgettable */}
+            <div id="unforgettable">
+              <UnforgettableSection />
+            </div>
 
-            </main>
+            {/* SECTION 6: Hidden Surprise (Gift Box) */}
+            <div id="surprise">
+              <SurpriseSection />
+            </div>
 
-            <Footer name={name} />
+            {/* SECTION 7: Interactive Birthday Cake */}
+            <div id="cake">
+              <CakeSection onBlowOut={() => console.log('Candles blown out!')} />
+            </div>
+
+            {/* SECTION 8: Quiet Ending Screen */}
+            <div id="ending">
+              <EndingSection onVisible={() => setIsEnding(true)} />
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
